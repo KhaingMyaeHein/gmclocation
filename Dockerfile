@@ -3,7 +3,8 @@ FROM gradle:8-jdk17 AS build
 WORKDIR /app
 COPY . .
 
-RUN gradle build -x test
+RUN ./gradlew build -x test
+RUN chmod +x gradlew
 
 FROM eclipse-temurin:17
 
