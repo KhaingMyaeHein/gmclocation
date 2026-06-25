@@ -8,12 +8,11 @@ RUN ./gradlew clean build -x test --no-daemon
 
 FROM eclipse-temurin:21
 
-WORKDIR /opt/app
+WORKDIR /opt/traccar
 
-# safer copy (avoids wildcard failure)
-COPY --from=build /app/target/ /app/libs/
-COPY conf/traccar.xml /opt/traccar/conf/traccar.xml
+COPY --from=build /app/target/tracker-server.jar .
+COPY conf/traccar.xml ./conf/traccar.xml
+
 EXPOSE 8082
 
-ENTRYPOINT ["sh", "-c", "java -jar /app/libs/*.jar"]
 CMD ["java","-jar","tracker-server.jar","conf/traccar.xml"]
