@@ -1,15 +1,17 @@
-FROM alpine AS package
-ARG VERSION
-COPY traccar-other-$VERSION.zip /tmp/traccar.zip
-RUN unzip -qo /tmp/traccar.zip -d /traccar
+FROM gradle:8-jdk17 AS build
 
-FROM eclipse-temurin:25 AS jdk
-RUN jlink --add-modules java.se,jdk.charsets,jdk.crypto.ec,jdk.unsupported \
-    --strip-debug --no-header-files --no-man-pages --compress=2 --output /jre
+WORKDIR /app
+COPY . .
 
-FROM debian:stable-slim
-COPY --from=package /traccar /opt/traccar
-COPY --from=jdk /jre /opt/traccar/jre
+RUN gradle build -x test
+
+FROM eclipse-temurin:17
+
 WORKDIR /opt/traccar
-ENTRYPOINT ["/opt/traccar/jre/bin/java"]
-CMD ["-jar", "tracker-server.jar", "conf/traccar.xml"]
+
+COPY --from=build /app/build/libs/*.jar app.jar
+
+EXPOSE 8082
+
+ENTRYPOINT ["java"]
+CMD ["-jar", "app.jar"]
