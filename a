@@ -1,0 +1,236 @@
+[33mcommit fb0fa98dc1d9ce4a1942ee5206dc0d4859ee22f5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: khaingmyaehein <khaingmyaehein@gmail.com>
+Date:   Thu Jun 25 12:54:25 2026 +0630
+
+    fit 2
+
+[33mcommit c9fcb50526b1146a3afe4c4c2dae75526001ee68[m[33m ([m[1;31morigin/main[m[33m)[m
+Author: khaingmyaehein <khaingmyaehein@gmail.com>
+Date:   Thu Jun 25 12:49:39 2026 +0630
+
+    fit1
+
+[33mcommit 7dc130d9c1160e32919444dcaf9f4d8d6a066ad2[m
+Author: khaingmyaehein <khaingmyaehein@gmail.com>
+Date:   Thu Jun 25 12:40:43 2026 +0630
+
+    repal dockerfile
+
+[33mcommit 22c2dc9e0935b799cafe5ec965aa63ca121dc4d9[m
+Author: khaingmyaehein <khaingmyaehein@gmail.com>
+Date:   Thu Jun 25 12:33:35 2026 +0630
+
+    add docker
+
+[33mcommit 6bcf1d75859c2c61fe1e7ec1d5f413f5b00f521f[m
+Author: khaingmyaehein <khaingmyaehein@gmail.com>
+Date:   Thu Jun 25 11:41:04 2026 +0630
+
+    first commit
+
+[33mcommit 8b0aae0e1916b59a8e3a3cd2321955a856ddbc23[m
+Author: nilei <nils.leideck@leidex.net>
+Date:   Wed Jun 24 18:58:08 2026 +0200
+
+    Add support for the Xinchun time zone synchronization command (0x1007) by sending a general response (0x8001) (#5926)
+    
+    * Add support for the Xinchun time zone synchronization command (0x1007) by sending a general response (0x8001)
+    
+    This change adds support for 0x1007 and acknowledges the message with a standard JT808 general response (0x8001).
+    
+    * Update Jt808ProtocolDecoder.java
+
+[33mcommit 13c49d928a106585d13ee40de63f01fc3cefd6f2[m
+Author: nilei <nils.leideck@leidex.net>
+Date:   Tue Jun 23 14:49:45 2026 +0200
+
+    Add JT808 0xF6 IMEI decoding (#5912)
+    
+    * Add JT808 0xF6 IMEI decoding
+    
+    ### Summary
+    
+    Adds support for decoding the Xinchun-specific JT808 `0x0200` additional information field `0xF6` as an IMEI upload field.
+    
+    ### Details
+    
+    According to the Xinchun JT808 protocol documentation, additional field `0xF6` with length `8` contains the device IMEI encoded as BCD. The decoder previously handled `0xF6` only as air pressure or as a generic event/sensor field, so Xinchun IMEI uploads were not exposed.
+    
+    This change adds explicit handling for `0xF6` when the field length is `8`:
+    
+    * reads the 8-byte BCD value
+    * removes the leading BCD padding zero
+    * stores the decoded value as `imei`
+    * keeps the existing `0xF6` handling for other lengths unchanged
+    
+    ### Test
+    
+    Adds a decoder test using a minimal `0x0200` position report with:
+    
+    `f6 08 08 67 56 70 41 10 07 69`
+    
+    Expected decoded value:
+    
+    `imei = 867567041100769`
+    
+    * Update Jt808ProtocolDecoder.java
+    
+    The 144-character line was broken up into more readable segments.
+    
+    * Changed to custom attribute
+    
+    Removed static KEY from Position model.
+    Changed to "imei" custom attribute key in decoder and test files.
+    
+    * Update Jt808ProtocolDecoder.java
+    
+    Decode IMEI without modifying fixed-format value to preserve raw IMEI value from BCD-encoded upload.
+    
+    * Update Jt808ProtocolDecoderTest.java
+    
+    Fixed indention and trailing spaces.
+    
+    * Update Jt808ProtocolDecoder.java
+    
+    IMEI is 15 digits, but the field is encoded as 8 BCD bytes, so the first padding nibble is skipped.
+
+[33mcommit 7ef31dc41adf530d74d0a6317dd621bbac48b86f[m
+Author: Gavriel Fleischer <flocsy@gmail.com>
+Date:   Tue Jun 23 07:02:58 2026 +0300
+
+    added TK2 (#4183)
+
+[33mcommit 4c76fe51ae4cca0e246c88f4bc29e4602ba2f4d8[m
+Author: nilei <nils.leideck@leidex.net>
+Date:   Tue Jun 23 02:29:46 2026 +0200
+
+    Add support for JT808 terminal attribute report (0x0107) ICCID decoding (#5923)
+    
+    * Add support for JT808 terminal attribute report (0x0107) ICCID decoding
+    
+    ## Summary
+    
+    Add support for decoding ICCID information from JT808 terminal attribute report messages (0x0107).
+    
+    ## Details
+    
+    Some Xinchun devices (e.g. C5L) report terminal information using message ID 0x0107 immediately after connection. The message contains device metadata including terminal model, terminal ID, ICCID, hardware version, and firmware version.
+    
+    The current decoder ignores 0x0107 messages, causing ICCID information to be unavailable until a vendor-specific 0x1107 message is received. This change adds support for extracting the ICCID from the standard JT808 terminal attribute report.
+    
+    ## Protocol Reference
+    
+    Xinchun JT808 Protocol Documentation
+    
+    - Page 33
+    - Section 2.22: Query Terminal Attribute Reporting (0x0107)
+    
+    The specification defines the following fields in the 0x0107 message:
+    
+    - Terminal Type
+    - Manufacturer ID
+    - Terminal Model
+    - Terminal ID
+    - Terminal SIM Card ICCID (BCD[10])
+    - Hardware Version
+    - Firmware Version
+    
+    This change decodes the standard ICCID field from the terminal attribute report and stores it in `Position.KEY_ICCID`.
+    
+    ## Testing
+    
+    Added a unit test using a real C5L terminal attribute report frame containing:
+    
+    - Model: C5L
+    - ICCID: 89883030000131882455
+    - Firmware Version: C5L_V2.6 2026/06/04 15:31
+    
+    The test verifies that the decoder correctly extracts and stores the ICCID from the 0x0107 message.
+    
+    * Update Jt808ProtocolDecoder.java
+    
+    Removed trailing spaces
+    
+    * Update Jt808ProtocolDecoder.java
+    
+    Implemented recommended changes.
+    
+    * Update Jt808ProtocolDecoder.java
+
+[33mcommit 7c00b1c837304756464b136fe90231664a22c2dd[m
+Author: Anton Tananaev <anton@traccar.org>
+Date:   Sat Jun 20 21:13:01 2026 -0700
+
+    Harden media buffers (fix #5920)
+
+[33mcommit f647f29fea4251e0549651cb7077bb6610553cf1[m
+Author: Micheal Aro <harrowwestmykel@gmail.com>
+Date:   Sun Jun 21 02:32:21 2026 +0200
+
+    Support dynamic extra keys in OsmAnd json requests (#5915)
+    
+    * #5909: Support dynamic extra keys in OsmAnd json requests
+    
+    * #5909 - removed multiple tests, converted switch
+    
+    * #5909: dynamic extra keys in osmand json requests
+    
+    * #5909: Extended extra keys support
+    
+    * #5909: dynamic extra keys in osmand json requests
+    
+    * #5909: fixed alarm duplication
+
+[33mcommit d67b79bd8fed6a2107e0e0a3c559befd29b54eeb[m
+Author: Anton Tananaev <anton@traccar.org>
+Date:   Sat Jun 20 17:30:12 2026 -0700
+
+    Support Arnavi WiFi header (fix #5612)
+
+[33mcommit 64783b87b9f316e272c74da31daa41f077b1915b[m
+Author: Anton Tananaev <anton@traccar.org>
+Date:   Sat Jun 20 17:27:14 2026 -0700
+
+    Support per device ACK (fix #5701)
+
+[33mcommit 1af8e9007bd99335880a93d857dbf3b0d8311aa0[m
+Author: Anton Tananaev <anton@traccar.org>
+Date:   Sat Jun 20 16:46:26 2026 -0700
+
+    Update unit test
+
+[33mcommit 5fb818959ec0686334d6f07a6392ec2c13289f30[m
+Author: Anton Tananaev <anton@traccar.org>
+Date:   Sat Jun 20 16:46:05 2026 -0700
+
+    Update skip attributes logic
+
+[33mcommit 720dc3579d971b24e35d42e810e02a80df97b744[m
+Author: nilei <nils.leideck@leidex.net>
+Date:   Thu Jun 18 16:40:11 2026 +0200
+
+    Decode JT808 0x0210 hibernation battery reports (#5910)
+    
+    * Decode JT808 0x0210 hibernation battery reports
+    
+    Add handling for Xinchun JT808 0x0210 hibernation battery level updates.
+    
+    Some Xinchun/C5L devices use message 0x0210 with a 7-byte body to report battery level during sleep:
+    - 1 byte battery percentage
+    - 6 byte BCD timestamp
+    
+    The existing decoder treated all 0x0210 messages as batch location uploads. This caused 7-byte sleep battery reports to be parsed incorrectly.
+    
+    This change adds a length-based special case for 0x0210 messages with a 7-byte body, decodes the battery level and timestamp into a Position object, and keeps existing batch upload handling unchanged for other 0x0210 payloads.
+    
+    A regression test is included using a real device frame:
+    7e0210000704546000231900884f2606180229579c7e
+    
+    * Update Jt808ProtocolDecoder.java
+    
+    Moved and reused bodyLength variable.
+    Submitted time into getLastLocation() instead of position.setTime()
+    
+    * Update Jt808ProtocolDecoder.java
+    
+    I initially tried to avoid a temporary variable by reading the battery value from 
