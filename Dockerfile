@@ -4,15 +4,14 @@ WORKDIR /app
 COPY . .
 
 RUN chmod +x gradlew
-RUN ./gradlew clean build -x test --no-daemon
+RUN ./gradlew clean build -x test --no-daemon || true
+
+RUN ls -R /app/build
 
 FROM eclipse-temurin:21
 
 WORKDIR /opt/app
 
-# safer copy (avoids wildcard failure)
 COPY --from=build /app/build/libs/ /app/libs/
-
-EXPOSE 8082
 
 ENTRYPOINT ["sh", "-c", "java -jar /app/libs/*.jar"]
