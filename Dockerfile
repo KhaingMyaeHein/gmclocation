@@ -1,18 +1,18 @@
-FROM gradle:8-jdk17 AS build
+FROM eclipse-temurin:21 AS build
+
+RUN apt-get update && apt-get install -y protobuf-compiler
 
 WORKDIR /app
 COPY . .
 
-RUN ./gradlew build -x test
 RUN chmod +x gradlew
+RUN ./gradlew build -x test --no-daemon
 
-FROM eclipse-temurin:17
+FROM eclipse-temurin:21
 
-WORKDIR /opt/traccar
-
+WORKDIR /opt/app
 COPY --from=build /app/build/libs/*.jar app.jar
 
 EXPOSE 8082
 
-ENTRYPOINT ["java"]
-CMD ["-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
